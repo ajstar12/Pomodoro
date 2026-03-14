@@ -18,6 +18,9 @@
     <string name="short_break_duration">Short Break Duration</string>
     <string name="long_break_duration">Long Break Duration</string>
     <string name="enable_vibration">Enable Vibration</string>
-    <string name="enable_sound">Enable Sound</string>
+    <string name="enable_focus_sound">Focus Session Complete Sound</string>
+    <string name="enable_break_sound">Break Session Complete Sound</string>
+    <string name="notification_sound">Notification Sound</string>
     <string name="auto_start_next">Auto-start Next Session</string>
+    <string name="select_sound">Select Notification Sound</string>
 </resources>

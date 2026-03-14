@@ -6,7 +6,12 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.Ringtone
+import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import androidx.core.app.NotificationCompat
 import com.arjunsinh.pomodoro.R
 import com.arjunsinh.pomodoro.service.PomodoroForegroundService
@@ -22,7 +27,8 @@ class NotificationHelper(private val context: Context) {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
+            // Timer progress channel (low importance, no sound)
+            val timerChannel = NotificationChannel(
                 Constants.NOTIFICATION_CHANNEL_ID,
                 Constants.NOTIFICATION_CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_LOW
@@ -30,8 +36,23 @@ class NotificationHelper(private val context: Context) {
                 description = Constants.NOTIFICATION_CHANNEL_DESC
                 setShowBadge(false)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                setSound(null, null)
             }
-            notificationManager.createNotificationChannel(channel)
+            notificationManager.createNotificationChannel(timerChannel)
+
+            // Session completion channel (high importance, with sound)
+            val completionChannel = NotificationChannel(
+                Constants.NOTIFICATION_COMPLETION_CHANNEL_ID,
+                Constants.NOTIFICATION_COMPLETION_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = Constants.NOTIFICATION_COMPLETION_CHANNEL_DESC
+                setShowBadge(true)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 500, 200, 500)
+            }
+            notificationManager.createNotificationChannel(completionChannel)
         }
     }
 
@@ -96,6 +117,8 @@ class NotificationHelper(private val context: Context) {
     }
 
     fun showSessionCompleteNotification(sessionType: Constants.SessionType) {
+        val sharedPreferences = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+
         val title = when (sessionType) {
             Constants.SessionType.FOCUS -> "Focus Session Complete! 🎉"
             Constants.SessionType.SHORT_BREAK -> "Break Complete!"
@@ -108,15 +131,87 @@ class NotificationHelper(private val context: Context) {
             Constants.SessionType.LONG_BREAK -> "Feeling refreshed? Let's continue!"
         }
 
-        val notification = NotificationCompat.Builder(context, Constants.NOTIFICATION_CHANNEL_ID)
+        // Determine if sound should play based on settings
+        val shouldPlaySound = when (sessionType) {
+            Constants.SessionType.FOCUS -> 
+                sharedPreferences.getBoolean(Constants.PREFS_ENABLE_FOCUS_SOUND, true)
+            Constants.SessionType.SHORT_BREAK, Constants.SessionType.LONG_BREAK -> 
+                sharedPreferences.getBoolean(Constants.PREFS_ENABLE_BREAK_SOUND, true)
+        }
+
+        val contentIntent = Intent(context, HomeActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+
+        val contentPendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            contentIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(context, Constants.NOTIFICATION_COMPLETION_CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(message)
             .setSmallIcon(R.drawable.ic_check)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setAutoCancel(true)
-            .build()
+            .setContentIntent(contentPendingIntent)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setSound(null) // Don't use notification's built-in sound
 
-        notificationManager.notify(System.currentTimeMillis().toInt(), notification)
+        // Vibration is controlled by the notification channel settings
+        val enableVibration = sharedPreferences.getBoolean(Constants.PREFS_ENABLE_VIBRATION, true)
+        if (!enableVibration) {
+            builder.setVibrate(longArrayOf(0))
+        }
+
+        notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
+
+        // Play sound manually for 1 second if enabled
+        if (shouldPlaySound) {
+            playNotificationSound()
+        }
+    }
+
+    private fun playNotificationSound() {
+        try {
+            val sharedPreferences = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+            val soundUriString = sharedPreferences.getString(Constants.PREFS_NOTIFICATION_SOUND_URI, "")
+
+            val notificationUri: Uri = if (soundUriString.isNullOrEmpty()) {
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            } else {
+                Uri.parse(soundUriString)
+            }
+
+            val ringtone: Ringtone = RingtoneManager.getRingtone(context, notificationUri)
+
+            ringtone.play()
+
+            // Stop the sound after 1 second
+            Handler(Looper.getMainLooper()).postDelayed({
+                if (ringtone.isPlaying) {
+                    ringtone.stop()
+                }
+            }, 1000) // 1 second
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Fallback to default sound if there's an error
+            try {
+                val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                val ringtone = RingtoneManager.getRingtone(context, defaultUri)
+                ringtone.play()
+                Handler(Looper.getMainLooper()).postDelayed({
+                    if (ringtone.isPlaying) {
+                        ringtone.stop()
+                    }
+                }, 1000)
+            } catch (e2: Exception) {
+                e2.printStackTrace()
+            }
+        }
     }
 
     fun createDailyReminderChannel() {
