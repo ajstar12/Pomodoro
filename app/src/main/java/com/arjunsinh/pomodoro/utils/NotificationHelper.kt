@@ -132,4 +132,8 @@ class NotificationHelper(private val context: Context) {
             notificationManager.createNotificationChannel(channel)
         }
     }
+
+    fun updateNotification(notificationId: Int, notification: Notification) {
+        notificationManager.notify(notificationId, notification)
+    }
 }

@@ -7,7 +7,6 @@ import android.os.Binder
 import android.os.IBinder
 import android.os.PowerManager
 import android.os.Vibrator
-import androidx.lifecycle.lifecycleScope
 import com.arjunsinh.pomodoro.data.database.PomodoroDatabase
 import com.arjunsinh.pomodoro.data.entity.Session
 import com.arjunsinh.pomodoro.data.repository.SessionRepository
@@ -238,7 +237,7 @@ class PomodoroForegroundService : Service() {
 
     private fun updateNotification() {
         val notification = buildNotification()
-        notificationHelper.notificationManager.notify(Constants.FOREGROUND_SERVICE_ID, notification)
+        notificationHelper.updateNotification(Constants.FOREGROUND_SERVICE_ID, notification)
     }
 
     private fun buildNotification() = notificationHelper.buildTimerNotification(
