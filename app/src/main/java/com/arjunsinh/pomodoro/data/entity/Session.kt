@@ -30,6 +30,9 @@ data class Session(
     @ColumnInfo(name = "session_type")
     val sessionType: Constants.SessionType,
 
+    @ColumnInfo(name = "started_at")
+    val startedAt: Long = System.currentTimeMillis(),
+
     @ColumnInfo(name = "completed_at")
     val completedAt: Long = System.currentTimeMillis(),
 

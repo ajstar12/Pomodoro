@@ -9,6 +9,7 @@ class TimerManager {
     private var sessionEndTime: Long = 0L
     private var sessionDuration: Long = 0L
     private var pausedRemainingTime: Long = 0L
+    private var sessionStartTimeMillis: Long = 0L
 
     var currentState: TimerState = TimerState.IDLE
         private set
@@ -25,6 +26,7 @@ class TimerManager {
         sessionDuration = duration
         currentSessionType = sessionType
         sessionEndTime = SystemClock.elapsedRealtime() + duration
+        sessionStartTimeMillis = System.currentTimeMillis()
         currentState = TimerState.RUNNING
     }
 
@@ -104,6 +106,8 @@ class TimerManager {
     }
 
     fun getSessionDuration(): Long = sessionDuration
+
+    fun getSessionStartTime(): Long = sessionStartTimeMillis
 
     fun getFormattedTime(): String {
         val totalSeconds = (getRemainingTime() / 1000).toInt()

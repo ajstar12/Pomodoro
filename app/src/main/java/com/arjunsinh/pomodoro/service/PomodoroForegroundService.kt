@@ -182,6 +182,7 @@ class PomodoroForegroundService : Service() {
     private fun saveCurrentSession(wasCompleted: Boolean) {
         val sessionType = timerManager.currentSessionType
         val duration = timerManager.getSessionDuration()
+        val startTime = timerManager.getSessionStartTime()
 
         val xpEarned = if (wasCompleted && sessionType == Constants.SessionType.FOCUS) {
             Constants.XP_PER_FOCUS_SESSION
@@ -191,6 +192,7 @@ class PomodoroForegroundService : Service() {
             taskId = currentTaskId,
             duration = duration,
             sessionType = sessionType,
+            startedAt = startTime,
             completedAt = System.currentTimeMillis(),
             xpEarned = xpEarned,
             wasCompleted = wasCompleted

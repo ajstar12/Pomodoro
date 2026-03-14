@@ -68,7 +68,7 @@ object Constants {
 
     // Database
     const val DATABASE_NAME = "pomodoro_database"
-    const val DATABASE_VERSION = 1
+    const val DATABASE_VERSION = 2
 
     // Notification IDs
     const val REMINDER_NOTIFICATION_ID = 2001
