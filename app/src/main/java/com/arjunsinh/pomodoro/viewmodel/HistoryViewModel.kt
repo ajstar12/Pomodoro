@@ -6,12 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.arjunsinh.pomodoro.data.database.PomodoroDatabase
 import com.arjunsinh.pomodoro.data.repository.SessionRepository
 import com.arjunsinh.pomodoro.ui.model.HistoryItem
+import com.arjunsinh.pomodoro.utils.Constants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 class HistoryViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -19,6 +19,9 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
 
     private val _historyItems = MutableStateFlow<List<HistoryItem>>(emptyList())
     val historyItems: StateFlow<List<HistoryItem>> = _historyItems
+
+    private val _totalCompletedSessions = MutableStateFlow(0)
+    val totalCompletedSessions: StateFlow<Int> = _totalCompletedSessions
 
     init {
         val database = PomodoroDatabase.getDatabase(application)
@@ -29,6 +32,10 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
     private fun loadSessions() {
         viewModelScope.launch {
             sessionRepository.allSessions.collect { sessionList ->
+                val completedSessions = sessionList.filter { 
+                    it.wasCompleted && it.sessionType == Constants.SessionType.FOCUS 
+                }
+                _totalCompletedSessions.value = completedSessions.size
                 _historyItems.value = groupSessionsByDate(sessionList)
             }
         }

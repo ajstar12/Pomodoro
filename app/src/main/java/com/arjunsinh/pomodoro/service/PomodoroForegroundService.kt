@@ -133,7 +133,7 @@ class PomodoroForegroundService : Service() {
     private fun onSessionComplete() {
         timerManager.completeSession()
 
-        // Save session to database
+        // Save session and update tasks
         saveCurrentSession(true)
 
         // Vibrate
@@ -201,8 +201,9 @@ class PomodoroForegroundService : Service() {
         serviceScope.launch {
             sessionRepository.insertSession(session)
 
-            if (wasCompleted && sessionType == Constants.SessionType.FOCUS && currentTaskId != null) {
-                taskRepository.incrementTaskPomodoros(currentTaskId!!)
+            // When a FOCUS session is completed, increment all active tasks
+            if (wasCompleted && sessionType == Constants.SessionType.FOCUS) {
+                taskRepository.incrementAllActiveTasksPomodoros()
             }
         }
     }

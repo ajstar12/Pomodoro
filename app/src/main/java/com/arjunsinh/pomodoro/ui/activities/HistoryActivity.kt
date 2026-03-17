@@ -31,15 +31,14 @@ class HistoryActivity : AppCompatActivity() {
         setupToolbar()
         setupRecyclerView()
         observeSessions()
+        observeStats()
     }
 
     private fun setupEdgeToEdge() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.updatePadding(
-                top = systemBars.top,
-                bottom = systemBars.bottom
-            )
+            // Only apply top padding to the toolbar area
+            binding.toolbar.updatePadding(top = systemBars.top)
             insets
         }
     }
@@ -67,6 +66,14 @@ class HistoryActivity : AppCompatActivity() {
                     binding.rvHistory.visibility = View.VISIBLE
                     adapter.submitList(items)
                 }
+            }
+        }
+    }
+
+    private fun observeStats() {
+        lifecycleScope.launch {
+            viewModel.totalCompletedSessions.collect { count ->
+                binding.tvTotalSessionsCount.text = count.toString()
             }
         }
     }

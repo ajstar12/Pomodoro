@@ -2,12 +2,14 @@ package com.arjunsinh.pomodoro.ui.activities
 
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -44,13 +46,23 @@ class TaskActivity : AppCompatActivity() {
     private fun setupEdgeToEdge() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.updatePadding(
-                top = systemBars.top,
-                bottom = systemBars.bottom
-            )
+            
+            // Apply top padding to the toolbar area
+            binding.toolbar.updatePadding(top = systemBars.top)
+            
+            // Apply bottom padding to RecyclerView so content isn't hidden by nav bar
+            binding.rvTasks.updatePadding(bottom = systemBars.bottom + 100) // extra padding for FAB space
+            
+            // Adjust FAB margin so it sits above the navigation bar
+            binding.fabAddTask.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = systemBars.bottom + 16.toPx()
+            }
+            
             insets
         }
     }
+
+    private fun Int.toPx(): Int = (this * resources.displayMetrics.density).toInt()
 
     private fun setupToolbar() {
         setSupportActionBar(binding.toolbar)

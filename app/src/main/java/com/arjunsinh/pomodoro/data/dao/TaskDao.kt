@@ -30,6 +30,9 @@ interface TaskDao {
     @Query("UPDATE tasks SET completed_pomodoros = completed_pomodoros + 1 WHERE id = :taskId")
     suspend fun incrementTaskPomodoros(taskId: Long)
 
+    @Query("UPDATE tasks SET completed_pomodoros = completed_pomodoros + 1 WHERE is_completed = 0")
+    suspend fun incrementAllActiveTasksPomodoros()
+
     @Query("UPDATE tasks SET is_completed = :isCompleted, updated_at = :updatedAt WHERE id = :taskId")
     suspend fun updateTaskCompletion(taskId: Long, isCompleted: Boolean, updatedAt: Long)
 

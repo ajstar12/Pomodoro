@@ -30,6 +30,10 @@ class TaskRepository(private val taskDao: TaskDao) {
         taskDao.incrementTaskPomodoros(taskId)
     }
 
+    suspend fun incrementAllActiveTasksPomodoros() {
+        taskDao.incrementAllActiveTasksPomodoros()
+    }
+
     suspend fun updateTaskCompletion(taskId: Long, isCompleted: Boolean) {
         taskDao.updateTaskCompletion(taskId, isCompleted, System.currentTimeMillis())
     }
