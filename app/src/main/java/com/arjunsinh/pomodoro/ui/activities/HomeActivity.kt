@@ -3,8 +3,12 @@ package com.arjunsinh.pomodoro.ui.activities
 import android.content.*
 import android.os.Bundle
 import android.os.IBinder
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
 import com.arjunsinh.pomodoro.R
 import com.arjunsinh.pomodoro.databinding.ActivityHomeBinding
@@ -65,14 +69,26 @@ class HomeActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        setupEdgeToEdge()
         setupToolbar()
         setupUI()
         observeTimerState()
         registerReceivers()
+    }
+
+    private fun setupEdgeToEdge() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            // Only apply TOP padding to the root. 
+            // BottomNavigationView handles its own bottom padding automatically.
+            v.updatePadding(top = systemBars.top)
+            insets
+        }
     }
 
     override fun onStart() {
