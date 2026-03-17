@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.arjunsinh.pomodoro.data.dao.SessionDao
 import com.arjunsinh.pomodoro.data.dao.TaskDao
 import com.arjunsinh.pomodoro.data.entity.Session
@@ -25,6 +27,15 @@ abstract class PomodoroDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: PomodoroDatabase? = null
 
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add the new started_at column
+                db.execSQL("ALTER TABLE sessions ADD COLUMN started_at INTEGER NOT NULL DEFAULT 0")
+                // Estimate started_at for old sessions
+                db.execSQL("UPDATE sessions SET started_at = completed_at - duration")
+            }
+        }
+
         fun getDatabase(context: Context): PomodoroDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -32,7 +43,7 @@ abstract class PomodoroDatabase : RoomDatabase() {
                     PomodoroDatabase::class.java,
                     Constants.DATABASE_NAME
                 )
-                    .fallbackToDestructiveMigration()
+                    .addMigrations(MIGRATION_1_2)
                     .build()
                 INSTANCE = instance
                 instance
