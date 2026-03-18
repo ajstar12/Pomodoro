@@ -194,10 +194,12 @@ class HomeActivity : AppCompatActivity() {
         val sessionTypeName = when (state.sessionType) {
             Constants.SessionType.FOCUS -> "Focus Session"
             Constants.SessionType.SHORT_BREAK -> "Short Break"
-            Constants.SessionType.LONG_BREAK -> "Long Break"
         }
         binding.tvSessionType.text = sessionTypeName
-        binding.tvSessionCount.text = "Session ${state.sessionCount} of 4"
+        
+        val completed = state.sessionCount
+        val remaining = (12 - completed).coerceAtLeast(0)
+        binding.tvSessionCount.text = "Completed: $completed | Remaining: $remaining"
 
         val progress = (state.progress * 100).toInt()
         binding.circularProgressBar.setProgressWithAnimation(progress.toFloat(), 1000)

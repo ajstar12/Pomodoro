@@ -20,8 +20,6 @@ class TimerManager {
     var currentSessionCount: Int = 0
         private set
 
-    private var longBreakAfter: Int = Constants.DEFAULT_LONG_BREAK_AFTER
-
     fun startSession(duration: Long, sessionType: SessionType) {
         sessionDuration = duration
         currentSessionType = sessionType
@@ -62,10 +60,6 @@ class TimerManager {
         currentSessionCount = 0
     }
 
-    fun setLongBreakInterval(interval: Int) {
-        longBreakAfter = interval
-    }
-
     fun getRemainingTime(): Long {
         return when (currentState) {
             TimerState.RUNNING -> {
@@ -90,19 +84,13 @@ class TimerManager {
 
     fun getNextSessionType(): SessionType {
         return when (currentSessionType) {
-            SessionType.FOCUS -> {
-                if (currentSessionCount >= longBreakAfter) {
-                    SessionType.LONG_BREAK
-                } else {
-                    SessionType.SHORT_BREAK
-                }
-            }
-            SessionType.SHORT_BREAK, SessionType.LONG_BREAK -> SessionType.FOCUS
+            SessionType.FOCUS -> SessionType.SHORT_BREAK
+            SessionType.SHORT_BREAK -> SessionType.FOCUS
         }
     }
 
     fun shouldResetCount(): Boolean {
-        return currentSessionType == SessionType.LONG_BREAK && currentState == TimerState.COMPLETED
+        return false
     }
 
     fun getSessionDuration(): Long = sessionDuration

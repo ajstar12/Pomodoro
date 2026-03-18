@@ -64,7 +64,6 @@ class NotificationHelper(private val context: Context) {
         val sessionName = when (sessionType) {
             Constants.SessionType.FOCUS -> "Focus Session"
             Constants.SessionType.SHORT_BREAK -> "Short Break"
-            Constants.SessionType.LONG_BREAK -> "Long Break"
         }
 
         val contentIntent = Intent(context, HomeActivity::class.java).apply {
@@ -123,20 +122,18 @@ class NotificationHelper(private val context: Context) {
         val title = when (sessionType) {
             Constants.SessionType.FOCUS -> "Focus Session Complete! 🎉"
             Constants.SessionType.SHORT_BREAK -> "Break Complete!"
-            Constants.SessionType.LONG_BREAK -> "Long Break Complete!"
         }
 
         val message = when (sessionType) {
             Constants.SessionType.FOCUS -> "Great work! Time for a break."
             Constants.SessionType.SHORT_BREAK -> "Ready to focus again?"
-            Constants.SessionType.LONG_BREAK -> "Feeling refreshed? Let's continue!"
         }
 
         // Determine if sound should play based on settings
         val shouldPlaySound = when (sessionType) {
             Constants.SessionType.FOCUS -> 
                 sharedPreferences.getBoolean(Constants.PREFS_ENABLE_FOCUS_SOUND, true)
-            Constants.SessionType.SHORT_BREAK, Constants.SessionType.LONG_BREAK -> 
+            Constants.SessionType.SHORT_BREAK -> 
                 sharedPreferences.getBoolean(Constants.PREFS_ENABLE_BREAK_SOUND, true)
         }
 

@@ -91,7 +91,6 @@ class SessionHistoryAdapter : ListAdapter<HistoryItem, RecyclerView.ViewHolder>(
             val (typeName, typeColor) = when (session.sessionType) {
                 Constants.SessionType.FOCUS -> "Focus Session" to R.color.primary
                 Constants.SessionType.SHORT_BREAK -> "Short Break" to R.color.secondary
-                Constants.SessionType.LONG_BREAK -> "Long Break" to R.color.long_break_color
             }
 
             binding.tvSessionType.text = typeName

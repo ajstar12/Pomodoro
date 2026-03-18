@@ -4,8 +4,6 @@ object Constants {
     // Timer Defaults (in milliseconds)
     const val DEFAULT_FOCUS_DURATION = 10 * 1000L // 25 minutes
     const val DEFAULT_SHORT_BREAK_DURATION = 10 * 1000L // 5 minutes
-    const val DEFAULT_LONG_BREAK_DURATION = 10 * 1000L // 15 minutes
-    const val DEFAULT_LONG_BREAK_AFTER = 2 // sessions
 
     // Service
     const val FOREGROUND_SERVICE_ID = 1001
@@ -35,7 +33,7 @@ object Constants {
 
     // Session Types
     enum class SessionType {
-        FOCUS, SHORT_BREAK, LONG_BREAK
+        FOCUS, SHORT_BREAK
     }
 
     // Timer States
@@ -47,8 +45,6 @@ object Constants {
     const val PREFS_NAME = "pomodoro_prefs"
     const val PREFS_FOCUS_DURATION = "focus_duration"
     const val PREFS_SHORT_BREAK_DURATION = "short_break_duration"
-    const val PREFS_LONG_BREAK_DURATION = "long_break_duration"
-    const val PREFS_LONG_BREAK_AFTER = "long_break_after"
     const val PREFS_ENABLE_VIBRATION = "enable_vibration"
     const val PREFS_ENABLE_FOCUS_SOUND = "enable_focus_sound"
     const val PREFS_ENABLE_BREAK_SOUND = "enable_break_sound"

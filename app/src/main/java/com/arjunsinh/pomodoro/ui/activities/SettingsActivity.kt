@@ -67,19 +67,14 @@ class SettingsActivity : AppCompatActivity() {
         val focusDuration = sharedPreferences.getLong(
             Constants.PREFS_FOCUS_DURATION,
             Constants.DEFAULT_FOCUS_DURATION
-        ) / 60000
+        )
         val shortBreak = sharedPreferences.getLong(
             Constants.PREFS_SHORT_BREAK_DURATION,
             Constants.DEFAULT_SHORT_BREAK_DURATION
-        ) / 60000
-        val longBreak = sharedPreferences.getLong(
-            Constants.PREFS_LONG_BREAK_DURATION,
-            Constants.DEFAULT_LONG_BREAK_DURATION
-        ) / 60000
+        )
 
-        binding.tvFocusDuration.text = "$focusDuration minutes"
-        binding.tvShortBreak.text = "$shortBreak minutes"
-        binding.tvLongBreak.text = "$longBreak minutes"
+        binding.tvFocusDuration.text = formatDurationDisplay(focusDuration)
+        binding.tvShortBreak.text = formatDurationDisplay(shortBreak)
 
         // Load notification settings
         binding.switchVibration.isChecked = sharedPreferences.getBoolean(
@@ -105,6 +100,14 @@ class SettingsActivity : AppCompatActivity() {
         )
     }
 
+    private fun formatDurationDisplay(millis: Long): String {
+        return when (millis) {
+            10000L -> "10 seconds"
+            60000L -> "1 minute"
+            else -> "${millis / 60000} minutes"
+        }
+    }
+
     private fun setupListeners() {
         // Duration settings
         binding.llFocusDuration.setOnClickListener {
@@ -112,8 +115,8 @@ class SettingsActivity : AppCompatActivity() {
                 "Focus Duration",
                 Constants.PREFS_FOCUS_DURATION,
                 Constants.DEFAULT_FOCUS_DURATION
-            ) { minutes ->
-                binding.tvFocusDuration.text = "$minutes minutes"
+            ) { millis ->
+                binding.tvFocusDuration.text = formatDurationDisplay(millis)
             }
         }
 
@@ -122,18 +125,8 @@ class SettingsActivity : AppCompatActivity() {
                 "Short Break Duration",
                 Constants.PREFS_SHORT_BREAK_DURATION,
                 Constants.DEFAULT_SHORT_BREAK_DURATION
-            ) { minutes ->
-                binding.tvShortBreak.text = "$minutes minutes"
-            }
-        }
-
-        binding.llLongBreak.setOnClickListener {
-            showDurationPicker(
-                "Long Break Duration",
-                Constants.PREFS_LONG_BREAK_DURATION,
-                Constants.DEFAULT_LONG_BREAK_DURATION
-            ) { minutes ->
-                binding.tvLongBreak.text = "$minutes minutes"
+            ) { millis ->
+                binding.tvShortBreak.text = formatDurationDisplay(millis)
             }
         }
 
@@ -173,21 +166,37 @@ class SettingsActivity : AppCompatActivity() {
         title: String,
         prefKey: String,
         defaultValue: Long,
-        onSelected: (Int) -> Unit
+        onSelected: (Long) -> Unit
     ) {
-        val currentMinutes = (sharedPreferences.getLong(prefKey, defaultValue) / 60000).toInt()
-        val options = (1..60).map { "$it minutes" }.toTypedArray()
-        var selectedMinutes = currentMinutes
+        val currentMillis = sharedPreferences.getLong(prefKey, defaultValue)
+        
+        // Define options: 10s, 1m, and 25m-45m
+        val options = mutableListOf<String>()
+        val values = mutableListOf<Long>()
+        
+        // Testing options
+        options.add("10 seconds")
+        values.add(10000L)
+        options.add("1 minute")
+        values.add(60000L)
+        
+        // Range 25-45 minutes
+        for (m in 25..45) {
+            options.add("$m minutes")
+            values.add(m * 60000L)
+        }
+
+        val currentIndex = values.indexOf(currentMillis).coerceAtLeast(0)
+        var selectedValue = values[currentIndex]
 
         AlertDialog.Builder(this)
             .setTitle(title)
-            .setSingleChoiceItems(options, currentMinutes - 1) { _, which ->
-                selectedMinutes = which + 1
+            .setSingleChoiceItems(options.toTypedArray(), currentIndex) { _, which ->
+                selectedValue = values[which]
             }
             .setPositiveButton("OK") { dialog, _ ->
-                val millis = selectedMinutes * 60000L
-                sharedPreferences.edit().putLong(prefKey, millis).apply()
-                onSelected(selectedMinutes)
+                sharedPreferences.edit().putLong(prefKey, selectedValue).apply()
+                onSelected(selectedValue)
                 dialog.dismiss()
             }
             .setNegativeButton("Cancel", null)

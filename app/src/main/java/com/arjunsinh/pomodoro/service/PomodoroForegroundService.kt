@@ -7,6 +7,7 @@ import android.os.Binder
 import android.os.IBinder
 import android.os.PowerManager
 import android.os.Vibrator
+import android.widget.Toast
 import com.arjunsinh.pomodoro.data.database.PomodoroDatabase
 import com.arjunsinh.pomodoro.data.entity.Session
 import com.arjunsinh.pomodoro.data.repository.SessionRepository
@@ -17,6 +18,7 @@ import com.arjunsinh.pomodoro.utils.TimerManager
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.util.Calendar
 
 class PomodoroForegroundService : Service() {
 
@@ -53,7 +55,6 @@ class PomodoroForegroundService : Service() {
         sharedPreferences = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
         vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
 
-        loadSettings()
         acquireWakeLock()
     }
 
@@ -75,26 +76,50 @@ class PomodoroForegroundService : Service() {
     private fun handleStart(intent: Intent) {
         val sessionType = intent.getSerializableExtra(Constants.EXTRA_SESSION_TYPE) as? Constants.SessionType
             ?: Constants.SessionType.FOCUS
-        val duration = getDurationForSessionType(sessionType)
+        
+        serviceScope.launch {
+            if (sessionType == Constants.SessionType.FOCUS) {
+                val startOfDay = getStartOfDay()
+                val todayCount = sessionRepository.getSessionCount(Constants.SessionType.FOCUS, startOfDay)
+                
+                if (todayCount >= 12) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@PomodoroForegroundService, "Daily limit of 12 sessions reached!", Toast.LENGTH_LONG).show()
+                    }
+                    stopSelf()
+                    return@launch
+                }
+            }
 
-        currentTaskId = intent.getLongExtra("task_id", -1L).takeIf { it != -1L }
+            val duration = getDurationForSessionType(sessionType)
+            currentTaskId = intent.getLongExtra("task_id", -1L).takeIf { it != -1L }
 
-        timerManager.startSession(duration, sessionType)
-        updateTimerState() // Update UI immediately
-        startForeground(Constants.FOREGROUND_SERVICE_ID, buildNotification())
-        startTimerTicker()
+            timerManager.startSession(duration, sessionType)
+            updateTimerState() 
+            startForeground(Constants.FOREGROUND_SERVICE_ID, buildNotification())
+            startTimerTicker()
+        }
+    }
+
+    private fun getStartOfDay(): Long {
+        val calendar = Calendar.getInstance()
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        return calendar.timeInMillis
     }
 
     private fun handlePause() {
         timerManager.pauseSession()
         stopTimerTicker()
-        updateTimerState() // Update UI immediately to show 'paused' state
+        updateTimerState() 
         updateNotification()
     }
 
     private fun handleResume() {
         timerManager.resumeSession()
-        updateTimerState() // Update UI immediately to show 'running' state
+        updateTimerState() 
         updateNotification()
         startTimerTicker()
     }
@@ -172,17 +197,29 @@ class PomodoroForegroundService : Service() {
     }
 
     private fun transitionToNextSession() {
-        if (timerManager.shouldResetCount()) {
-            timerManager.resetSessionCount()
-        }
-
         val nextSessionType = timerManager.getNextSessionType()
-        val duration = getDurationForSessionType(nextSessionType)
+        
+        serviceScope.launch {
+            if (nextSessionType == Constants.SessionType.FOCUS) {
+                val startOfDay = getStartOfDay()
+                val todayCount = sessionRepository.getSessionCount(Constants.SessionType.FOCUS, startOfDay)
+                
+                if (todayCount >= 12) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@PomodoroForegroundService, "Daily limit of 12 sessions reached!", Toast.LENGTH_LONG).show()
+                    }
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                    return@launch
+                }
+            }
 
-        timerManager.startSession(duration, nextSessionType)
-        updateTimerState()
-        startForeground(Constants.FOREGROUND_SERVICE_ID, buildNotification())
-        startTimerTicker()
+            val duration = getDurationForSessionType(nextSessionType)
+            timerManager.startSession(duration, nextSessionType)
+            updateTimerState()
+            startForeground(Constants.FOREGROUND_SERVICE_ID, buildNotification())
+            startTimerTicker()
+        }
     }
 
     private fun saveCurrentSession(wasCompleted: Boolean) {
@@ -228,20 +265,25 @@ class PomodoroForegroundService : Service() {
     }
 
     private fun updateTimerState() {
-        _timerState.value = TimerStateData(
-            remainingTime = timerManager.getRemainingTime(),
-            sessionType = timerManager.currentSessionType,
-            timerState = timerManager.currentState,
-            sessionCount = timerManager.currentSessionCount,
-            progress = timerManager.getProgress()
-        )
+        serviceScope.launch {
+            val startOfDay = getStartOfDay()
+            val todayCount = sessionRepository.getSessionCount(Constants.SessionType.FOCUS, startOfDay)
+            
+            _timerState.value = TimerStateData(
+                remainingTime = timerManager.getRemainingTime(),
+                sessionType = timerManager.currentSessionType,
+                timerState = timerManager.currentState,
+                sessionCount = todayCount, // Using daily count here
+                progress = timerManager.getProgress()
+            )
 
-        sendBroadcast(Intent(Constants.BROADCAST_TIMER_UPDATE).apply {
-            putExtra(Constants.EXTRA_REMAINING_TIME, timerManager.getRemainingTime())
-            putExtra(Constants.EXTRA_SESSION_TYPE, timerManager.currentSessionType)
-            putExtra(Constants.EXTRA_IS_RUNNING, timerManager.currentState == Constants.TimerState.RUNNING)
-            putExtra(Constants.EXTRA_CURRENT_SESSION_COUNT, timerManager.currentSessionCount)
-        })
+            sendBroadcast(Intent(Constants.BROADCAST_TIMER_UPDATE).apply {
+                putExtra(Constants.EXTRA_REMAINING_TIME, timerManager.getRemainingTime())
+                putExtra(Constants.EXTRA_SESSION_TYPE, timerManager.currentSessionType)
+                putExtra(Constants.EXTRA_IS_RUNNING, timerManager.currentState == Constants.TimerState.RUNNING)
+                putExtra(Constants.EXTRA_CURRENT_SESSION_COUNT, todayCount) // Sending daily count
+            })
+        }
     }
 
     private fun updateNotification() {
@@ -261,14 +303,7 @@ class PomodoroForegroundService : Service() {
                 sharedPreferences.getLong(Constants.PREFS_FOCUS_DURATION, Constants.DEFAULT_FOCUS_DURATION)
             Constants.SessionType.SHORT_BREAK -> 
                 sharedPreferences.getLong(Constants.PREFS_SHORT_BREAK_DURATION, Constants.DEFAULT_SHORT_BREAK_DURATION)
-            Constants.SessionType.LONG_BREAK -> 
-                sharedPreferences.getLong(Constants.PREFS_LONG_BREAK_DURATION, Constants.DEFAULT_LONG_BREAK_DURATION)
         }
-    }
-
-    private fun loadSettings() {
-        val longBreakAfter = sharedPreferences.getInt(Constants.PREFS_LONG_BREAK_AFTER, Constants.DEFAULT_LONG_BREAK_AFTER)
-        timerManager.setLongBreakInterval(longBreakAfter)
     }
 
     private fun acquireWakeLock() {
@@ -277,7 +312,7 @@ class PomodoroForegroundService : Service() {
             PowerManager.PARTIAL_WAKE_LOCK,
             "PomodoroApp::TimerWakeLock"
         )
-        wakeLock?.acquire(60 * 60 * 1000L) // 1 hour max
+        wakeLock?.acquire(60 * 60 * 1000L) 
     }
 
     override fun onDestroy() {
