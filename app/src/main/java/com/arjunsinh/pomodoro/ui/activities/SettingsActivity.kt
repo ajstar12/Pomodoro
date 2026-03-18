@@ -8,7 +8,11 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import com.arjunsinh.pomodoro.R
 import com.arjunsinh.pomodoro.databinding.ActivitySettingsBinding
 import com.arjunsinh.pomodoro.utils.Constants
@@ -20,15 +24,28 @@ class SettingsActivity : AppCompatActivity() {
     private var currentRingtone: Ringtone? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         sharedPreferences = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
 
+        setupEdgeToEdge()
         setupToolbar()
         loadSettings()
         setupListeners()
+    }
+
+    private fun setupEdgeToEdge() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            // Apply top padding to the root view to clear status bar
+            v.updatePadding(top = systemBars.top)
+            // Apply bottom padding to the root view or scrollable container if needed
+            v.updatePadding(bottom = systemBars.bottom)
+            insets
+        }
     }
 
     override fun onDestroy() {

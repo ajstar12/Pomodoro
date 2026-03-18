@@ -20,9 +20,6 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
     private val _historyItems = MutableStateFlow<List<HistoryItem>>(emptyList())
     val historyItems: StateFlow<List<HistoryItem>> = _historyItems
 
-    private val _totalCompletedSessions = MutableStateFlow(0)
-    val totalCompletedSessions: StateFlow<Int> = _totalCompletedSessions
-
     init {
         val database = PomodoroDatabase.getDatabase(application)
         sessionRepository = SessionRepository(database.sessionDao())
@@ -32,17 +29,23 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
     private fun loadSessions() {
         viewModelScope.launch {
             sessionRepository.allSessions.collect { sessionList ->
-                val completedSessions = sessionList.filter { 
+                val totalFocusCompleted = sessionList.count { 
                     it.wasCompleted && it.sessionType == Constants.SessionType.FOCUS 
                 }
-                _totalCompletedSessions.value = completedSessions.size
-                _historyItems.value = groupSessionsByDate(sessionList)
+                _historyItems.value = groupSessionsByDate(sessionList, totalFocusCompleted)
             }
         }
     }
 
-    private fun groupSessionsByDate(sessions: List<com.arjunsinh.pomodoro.data.entity.Session>): List<HistoryItem> {
+    private fun groupSessionsByDate(
+        sessions: List<com.arjunsinh.pomodoro.data.entity.Session>,
+        totalFocusCompleted: Int
+    ): List<HistoryItem> {
         val items = mutableListOf<HistoryItem>()
+        
+        // Add the scrollable header
+        items.add(HistoryItem.StatisticsHeader(totalFocusCompleted))
+        
         val groupedSessions = sessions.groupBy { getDateKey(it.completedAt) }
 
         groupedSessions.forEach { (dateKey, sessionList) ->

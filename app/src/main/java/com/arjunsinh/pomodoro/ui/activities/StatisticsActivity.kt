@@ -32,10 +32,9 @@ class StatisticsActivity : AppCompatActivity() {
     private fun setupEdgeToEdge() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            // Apply top padding to the toolbar area
-            binding.toolbar.updatePadding(top = systemBars.top)
-            // Apply bottom padding to the nested scroll view content container
-            // We apply it to the ScrollView itself if it's the bottom-most view
+            // Apply top padding to the root view to clear status bar
+            v.updatePadding(top = systemBars.top)
+            // Apply bottom padding to the ScrollView to ensure content isn't hidden by nav bar
             binding.scrollView.updatePadding(bottom = systemBars.bottom)
             insets
         }

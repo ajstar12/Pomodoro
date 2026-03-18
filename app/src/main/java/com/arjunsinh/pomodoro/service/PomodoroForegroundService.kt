@@ -80,18 +80,21 @@ class PomodoroForegroundService : Service() {
         currentTaskId = intent.getLongExtra("task_id", -1L).takeIf { it != -1L }
 
         timerManager.startSession(duration, sessionType)
+        updateTimerState() // Update UI immediately
         startForeground(Constants.FOREGROUND_SERVICE_ID, buildNotification())
         startTimerTicker()
     }
 
     private fun handlePause() {
         timerManager.pauseSession()
-        updateNotification()
         stopTimerTicker()
+        updateTimerState() // Update UI immediately to show 'paused' state
+        updateNotification()
     }
 
     private fun handleResume() {
         timerManager.resumeSession()
+        updateTimerState() // Update UI immediately to show 'running' state
         updateNotification()
         startTimerTicker()
     }
@@ -104,6 +107,7 @@ class PomodoroForegroundService : Service() {
     private fun handleStop() {
         timerManager.stopSession()
         stopTimerTicker()
+        updateTimerState()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -161,6 +165,7 @@ class PomodoroForegroundService : Service() {
                 transitionToNextSession()
             }
         } else {
+            updateTimerState()
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
         }
@@ -175,6 +180,7 @@ class PomodoroForegroundService : Service() {
         val duration = getDurationForSessionType(nextSessionType)
 
         timerManager.startSession(duration, nextSessionType)
+        updateTimerState()
         startForeground(Constants.FOREGROUND_SERVICE_ID, buildNotification())
         startTimerTicker()
     }

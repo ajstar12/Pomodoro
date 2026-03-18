@@ -31,14 +31,15 @@ class HistoryActivity : AppCompatActivity() {
         setupToolbar()
         setupRecyclerView()
         observeSessions()
-        observeStats()
     }
 
     private fun setupEdgeToEdge() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            // Only apply top padding to the toolbar area
-            binding.toolbar.updatePadding(top = systemBars.top)
+            // Apply top padding to the root view to clear status bar
+            v.updatePadding(top = systemBars.top)
+            // Apply bottom padding to RecyclerView so content isn't hidden by nav bar
+            binding.rvHistory.updatePadding(bottom = systemBars.bottom)
             insets
         }
     }
@@ -58,22 +59,20 @@ class HistoryActivity : AppCompatActivity() {
     private fun observeSessions() {
         lifecycleScope.launch {
             viewModel.historyItems.collect { items ->
-                if (items.isEmpty()) {
+                // Check if we only have the header (length 1) and no sessions
+                if (items.size <= 1) {
                     binding.tvEmptyState.visibility = View.VISIBLE
-                    binding.rvHistory.visibility = View.GONE
+                    // We still want to show the header even if list is empty? 
+                    // Usually yes, so we show 0 focus sessions.
+                    // If you want to hide the list completely when empty:
+                    // binding.rvHistory.visibility = View.GONE
                 } else {
                     binding.tvEmptyState.visibility = View.GONE
-                    binding.rvHistory.visibility = View.VISIBLE
-                    adapter.submitList(items)
                 }
-            }
-        }
-    }
-
-    private fun observeStats() {
-        lifecycleScope.launch {
-            viewModel.totalCompletedSessions.collect { count ->
-                binding.tvTotalSessionsCount.text = count.toString()
+                
+                // Always submit to show the Stats header
+                binding.rvHistory.visibility = View.VISIBLE
+                adapter.submitList(items)
             }
         }
     }

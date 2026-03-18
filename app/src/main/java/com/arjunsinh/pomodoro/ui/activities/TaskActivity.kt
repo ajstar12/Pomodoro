@@ -47,13 +47,14 @@ class TaskActivity : AppCompatActivity() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             
-            // Apply top padding to the toolbar area
-            binding.toolbar.updatePadding(top = systemBars.top)
+            // Apply top padding to the root view to clear status bar
+            v.updatePadding(top = systemBars.top)
             
             // Apply bottom padding to RecyclerView so content isn't hidden by nav bar
             binding.rvTasks.updatePadding(bottom = systemBars.bottom + 100) // extra padding for FAB space
             
             // Adjust FAB margin so it sits above the navigation bar
+            // Since root has no bottom padding, we use systemBars.bottom for margin
             binding.fabAddTask.updateLayoutParams<ViewGroup.MarginLayoutParams> {
                 bottomMargin = systemBars.bottom + 16.toPx()
             }
