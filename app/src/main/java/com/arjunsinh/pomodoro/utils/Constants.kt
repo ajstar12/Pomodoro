@@ -2,8 +2,8 @@ package com.arjunsinh.pomodoro.utils
 
 object Constants {
     // Timer Defaults (in milliseconds)
-    const val DEFAULT_FOCUS_DURATION = 10 * 1000L // 25 minutes
-    const val DEFAULT_SHORT_BREAK_DURATION = 10 * 1000L // 5 minutes
+    const val DEFAULT_FOCUS_DURATION = 25 * 60 * 1000L // 25 minutes
+    const val DEFAULT_SHORT_BREAK_DURATION = 5 * 60 * 1000L // 5 minutes
 
     // Service
     const val FOREGROUND_SERVICE_ID = 1001
@@ -57,10 +57,11 @@ object Constants {
     const val PREFS_FOCUS_STREAK = "focus_streak"
     const val PREFS_LAST_FOCUS_DATE = "last_focus_date"
 
-    // Gamification
-    const val XP_PER_FOCUS_SESSION = 100
-    const val XP_PER_LEVEL = 500
-    const val STREAK_BONUS_XP = 50
+    // Gamification - New Formulas
+    const val BASE_POINTS_PER_MINUTE = 4.0
+    const val DECAY_RATE = 0.01 // 1% per level
+    const val LEVEL_BASE_COST = 500
+    const val LEVEL_SLOPE = 170
 
     // Database
     const val DATABASE_NAME = "pomodoro_database"

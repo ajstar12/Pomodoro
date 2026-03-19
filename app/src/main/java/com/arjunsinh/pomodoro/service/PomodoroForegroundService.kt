@@ -13,6 +13,7 @@ import com.arjunsinh.pomodoro.data.entity.Session
 import com.arjunsinh.pomodoro.data.repository.SessionRepository
 import com.arjunsinh.pomodoro.data.repository.TaskRepository
 import com.arjunsinh.pomodoro.utils.Constants
+import com.arjunsinh.pomodoro.utils.GamificationUtils
 import com.arjunsinh.pomodoro.utils.NotificationHelper
 import com.arjunsinh.pomodoro.utils.TimerManager
 import kotlinx.coroutines.*
@@ -163,7 +164,7 @@ class PomodoroForegroundService : Service() {
         timerManager.completeSession()
 
         // Save session and update tasks
-        saveCurrentSession(true)
+        val earnedXp = saveCurrentSession(true)
 
         // Vibrate
         if (sharedPreferences.getBoolean(Constants.PREFS_ENABLE_VIBRATION, true)) {
@@ -175,7 +176,7 @@ class PomodoroForegroundService : Service() {
 
         // Update gamification
         if (timerManager.currentSessionType == Constants.SessionType.FOCUS) {
-            updateGamificationStats()
+            updateGamificationStats(earnedXp)
         }
 
         // Broadcast completion
@@ -222,13 +223,13 @@ class PomodoroForegroundService : Service() {
         }
     }
 
-    private fun saveCurrentSession(wasCompleted: Boolean) {
+    private fun saveCurrentSession(wasCompleted: Boolean): Int {
         val sessionType = timerManager.currentSessionType
         val duration = timerManager.getSessionDuration()
         val startTime = timerManager.getSessionStartTime()
 
         val xpEarned = if (wasCompleted && sessionType == Constants.SessionType.FOCUS) {
-            Constants.XP_PER_FOCUS_SESSION
+            GamificationUtils.calculateXpEarned(durationMillis = duration)
         } else 0
 
         val session = Session(
@@ -249,13 +250,16 @@ class PomodoroForegroundService : Service() {
                 taskRepository.incrementAllActiveTasksPomodoros()
             }
         }
+
+        return xpEarned
     }
 
-    private fun updateGamificationStats() {
+    private fun updateGamificationStats(earnedXp: Int) {
+        if (earnedXp <= 0) return
+
         val currentXP = sharedPreferences.getInt(Constants.PREFS_TOTAL_XP, 0)
-        val newXP = currentXP + Constants.XP_PER_FOCUS_SESSION
-        val currentLevel = sharedPreferences.getInt(Constants.PREFS_USER_LEVEL, 1)
-        val newLevel = (newXP / Constants.XP_PER_LEVEL) + 1
+        val newXP = currentXP + earnedXp
+        val newLevel = GamificationUtils.calculateLevelFromTotalXp(totalXp = newXP)
 
         sharedPreferences.edit().apply {
             putInt(Constants.PREFS_TOTAL_XP, newXP)

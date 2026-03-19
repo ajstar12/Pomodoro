@@ -9,7 +9,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
 import com.arjunsinh.pomodoro.databinding.ActivityStatisticsBinding
-import com.arjunsinh.pomodoro.utils.Constants
+import com.arjunsinh.pomodoro.utils.GamificationUtils
 import com.arjunsinh.pomodoro.viewmodel.StatsViewModel
 import kotlinx.coroutines.launch
 
@@ -57,10 +57,16 @@ class StatisticsActivity : AppCompatActivity() {
     private fun updateUI(stats: StatsViewModel.Statistics) {
         // Level and XP
         binding.tvLevel.text = "Level ${stats.userLevel}"
-        val xpProgress = (stats.totalXP % Constants.XP_PER_LEVEL)
-        val xpProgressPercent = ((xpProgress.toFloat() / Constants.XP_PER_LEVEL) * 100).toInt()
+
+        val xpAtStartOfLevel = GamificationUtils.getTotalXpForLevel(stats.userLevel)
+        val xpIntoCurrentLevel = (stats.totalXP - xpAtStartOfLevel).coerceAtLeast(0)
+        val xpRequiredForNextLevel = GamificationUtils.getXpRequiredForNextLevel(stats.userLevel)
+        val xpProgressPercent = if (xpRequiredForNextLevel > 0) {
+            ((xpIntoCurrentLevel.toFloat() / xpRequiredForNextLevel) * 100).toInt().coerceIn(0, 100)
+        } else 0
+
         binding.progressXP.progress = xpProgressPercent
-        binding.tvXP.text = "$xpProgress / ${Constants.XP_PER_LEVEL} XP"
+        binding.tvXP.text = "$xpIntoCurrentLevel / $xpRequiredForNextLevel XP"
 
         // Today stats
         binding.tvTodayTime.text = viewModel.formatTime(stats.todayFocusTime)
