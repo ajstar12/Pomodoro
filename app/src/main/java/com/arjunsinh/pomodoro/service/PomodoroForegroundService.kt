@@ -261,9 +261,26 @@ class PomodoroForegroundService : Service() {
         val newXP = currentXP + earnedXp
         val newLevel = GamificationUtils.calculateLevelFromTotalXp(totalXp = newXP)
 
+        // Streak logic: compare today's start-of-day with the last recorded focus date.
+        val todayStart = getStartOfDay()
+        val lastFocusDate = sharedPreferences.getLong(Constants.PREFS_LAST_FOCUS_DATE, 0L)
+        val yesterdayStart = todayStart - 24 * 60 * 60 * 1000L
+        val currentStreak = sharedPreferences.getInt(Constants.PREFS_FOCUS_STREAK, 0)
+
+        val newStreak = when {
+            lastFocusDate == todayStart -> currentStreak       // already counted today
+            lastFocusDate == yesterdayStart -> currentStreak + 1  // consecutive day
+            else -> 1                                          // first session or streak broken
+        }
+
         sharedPreferences.edit().apply {
             putInt(Constants.PREFS_TOTAL_XP, newXP)
             putInt(Constants.PREFS_USER_LEVEL, newLevel)
+            // Only update streak/date if this is the first focus session of the day
+            if (lastFocusDate != todayStart) {
+                putInt(Constants.PREFS_FOCUS_STREAK, newStreak)
+                putLong(Constants.PREFS_LAST_FOCUS_DATE, todayStart)
+            }
             apply()
         }
     }

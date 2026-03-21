@@ -121,13 +121,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         binding.llShortBreak.setOnClickListener {
-            showDurationPicker(
-                "Short Break Duration",
-                Constants.PREFS_SHORT_BREAK_DURATION,
-                Constants.DEFAULT_SHORT_BREAK_DURATION
-            ) { millis ->
-                binding.tvShortBreak.text = formatDurationDisplay(millis)
-            }
+            showShortBreakDurationPicker()
         }
 
         // Notification settings
@@ -197,6 +191,42 @@ class SettingsActivity : AppCompatActivity() {
             .setPositiveButton("OK") { dialog, _ ->
                 sharedPreferences.edit().putLong(prefKey, selectedValue).apply()
                 onSelected(selectedValue)
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showShortBreakDurationPicker() {
+        val currentMillis = sharedPreferences.getLong(
+            Constants.PREFS_SHORT_BREAK_DURATION,
+            Constants.DEFAULT_SHORT_BREAK_DURATION
+        )
+
+        // Range: 1–30 minutes
+        val options = mutableListOf<String>()
+        val values = mutableListOf<Long>()
+
+        options.add("1 minute")
+        values.add(1 * 60000L)
+        for (m in 2..30) {
+            options.add("$m minutes")
+            values.add(m * 60000L)
+        }
+
+        val currentIndex = values.indexOf(currentMillis).coerceAtLeast(0)
+        var selectedValue = values[currentIndex]
+
+        AlertDialog.Builder(this)
+            .setTitle("Short Break Duration")
+            .setSingleChoiceItems(options.toTypedArray(), currentIndex) { _, which ->
+                selectedValue = values[which]
+            }
+            .setPositiveButton("OK") { dialog, _ ->
+                sharedPreferences.edit()
+                    .putLong(Constants.PREFS_SHORT_BREAK_DURATION, selectedValue)
+                    .apply()
+                binding.tvShortBreak.text = formatDurationDisplay(selectedValue)
                 dialog.dismiss()
             }
             .setNegativeButton("Cancel", null)
